@@ -1,16 +1,10 @@
-import java.time.LocalDateTime;
+import java.io.IOException;
 
 public class Main {
-	static void main() {
-		String orderDateTime = "2021-02-09T16:00:22";
-		LocalDateTime orderDate = LocalDateTime.parse(orderDateTime);
-		String companyName = "Industrial";
-		int amountCementPurchased = 8800;
-
-		Order order1 = new Order(orderDate, companyName, amountCementPurchased);
-		NewOrder newOrder1 = new NewOrder(order1);
-
-		System.out.println(newOrder1);
-		System.out.println(NewOrder.discountPercent);
+	static void main() throws IOException {
+		FirstFileType firstFileType = new FirstFileType();
+		firstFileType.print("src/main/resources/in/discount_day.txt", "\\|", "file1.txt");
+		Printer secondFile = new PrintAdapter(firstFileType);
+		secondFile.print("src/main/resources/in/discount_day_without_ext", "#", "file2");
 	}
 }
