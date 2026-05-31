@@ -15,4 +15,9 @@ public class Order {
 		this.companyName = companyName;
 		this.amountCementPurchased = amountCementPurchased;
 	}
+
+	@Override
+	public String toString() {
+		return orderSubmissionTime + ", " + companyName + ", " + amountCementPurchased;
+	}
 }
