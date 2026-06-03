@@ -1,0 +1,65 @@
+import lombok.Setter;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+public class FileProcessing {
+	private static final int MIN_CEMENT_SALES_AMOUNT = 50;
+	private static final int CEMENT_COST = 500;
+	private static final int PERCENT_STEP = 5;
+
+	@Setter
+	private String fileName = "file.txt";
+	@Setter
+	private int discountPercent = 50;
+	private String path = "src/main/resources/in/discount_day.txt";
+
+	public void processingInFileAndSaveToFile() {
+		String spliterator = "\\|";
+		setDiscountPercent(50);
+		List<String> orders = new ArrayList<>();
+		try (Stream<String> lines = Files.lines(Path.of(path))) {
+			orders = lines
+						.map(line -> line.split(spliterator))
+						.map(s -> {
+							if (s.length < 3) {
+								throw new RuntimeException("Invalid spliterator: '" + spliterator + "' or file format!");
+							}
+							return new Order(LocalDateTime.parse(s[0]), s[1], Integer.parseInt(s[2]));
+						})
+						.sorted(Comparator.comparing(Order::getOrderSubmissionTime))
+						.map(order -> {
+							double subtotalCost = (double) order.getAmountCementPurchased() / MIN_CEMENT_SALES_AMOUNT * CEMENT_COST;
+							double cost = subtotalCost - ((double) discountPercent / 100 * subtotalCost);
+							reducingPercentByStep(PERCENT_STEP);
+							return order.getCompanyName() + " - " + cost;
+						})
+						.collect(Collectors.toList());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		String pathOutFile = "src/main/resources/out/" + fileName;
+		try (PrintWriter pw = new PrintWriter(pathOutFile)) {
+			orders.stream()
+						.forEach(pw::println);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void reducingPercentByStep(int percentStep) {
+		discountPercent -= percentStep;
+		if (discountPercent <= 0) {
+			discountPercent = 0;
+		}
+	}
+}
