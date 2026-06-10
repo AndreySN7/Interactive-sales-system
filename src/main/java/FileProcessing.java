@@ -1,4 +1,5 @@
 import lombok.Setter;
+import org.apache.commons.lang3.math.NumberUtils;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -7,6 +8,7 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.InputMismatchException;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -20,6 +22,7 @@ public class FileProcessing {
 	private String fileName = "file.txt";
 	@Setter
 	private int discountPercent = 50;
+	@Setter
 	private String path = "src/main/resources/in/discount_day.txt";
 
 	public void processingInFileAndSaveToFile() {
@@ -33,6 +36,9 @@ public class FileProcessing {
 							if (s.length < 3) {
 								throw new RuntimeException("Invalid spliterator: '" + spliterator + "' or file format!");
 							}
+							if (!NumberUtils.isParsable(s[2]) || Integer.parseInt(s[2]) < 0){
+								throw new InputMismatchException("Invalid amountCementPurchased " + s[2]);
+							}
 							return new Order(LocalDateTime.parse(s[0]), s[1], Integer.parseInt(s[2]));
 						})
 						.sorted(Comparator.comparing(Order::getOrderSubmissionTime))
@@ -44,6 +50,7 @@ public class FileProcessing {
 						})
 						.collect(Collectors.toList());
 		} catch (IOException e) {
+			System.out.println("FileProcessing not found!");
 			e.printStackTrace();
 		}
 
