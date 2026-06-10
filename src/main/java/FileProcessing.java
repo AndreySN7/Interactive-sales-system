@@ -6,6 +6,7 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.InputMismatchException;
@@ -30,16 +31,25 @@ public class FileProcessing {
 		setDiscountPercent(50);
 		List<String> orders = new ArrayList<>();
 		try (Stream<String> lines = Files.lines(Path.of(path))) {
+			if (Files.size(Path.of(path)) == 0) {
+				throw new RuntimeException("File is empty");
+			}
 			orders = lines
 						.map(line -> line.split(spliterator))
 						.map(s -> {
 							if (s.length < 3) {
 								throw new RuntimeException("Invalid spliterator: '" + spliterator + "' or file format!");
 							}
-							if (!NumberUtils.isParsable(s[2]) || Integer.parseInt(s[2]) < 0){
-								throw new InputMismatchException("Invalid amountCementPurchased " + s[2]);
+							LocalDateTime orderSubmissionTime;
+							try {
+								orderSubmissionTime = LocalDateTime.parse(s[0]);
+							} catch (DateTimeParseException e) {
+								throw new InputMismatchException("Invalid date: " + s[0]);
 							}
-							return new Order(LocalDateTime.parse(s[0]), s[1], Integer.parseInt(s[2]));
+							if (!NumberUtils.isParsable(s[2]) || Integer.parseInt(s[2]) < 0) {
+								throw new InputMismatchException("Invalid amountCementPurchased: " + s[2]);
+							}
+							return new Order(orderSubmissionTime, s[1], Integer.parseInt(s[2]));
 						})
 						.sorted(Comparator.comparing(Order::getOrderSubmissionTime))
 						.map(order -> {
@@ -50,8 +60,7 @@ public class FileProcessing {
 						})
 						.collect(Collectors.toList());
 		} catch (IOException e) {
-			System.out.println("FileProcessing not found!");
-			e.printStackTrace();
+			throw new RuntimeException("File not found");
 		}
 
 		String pathOutFile = "src/main/resources/out/" + fileName;

@@ -1,7 +1,4 @@
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,7 +16,6 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FileProcessingTest {
 	private static String pathIn = "src/main/resources/in/test.txt";
@@ -32,32 +28,19 @@ class FileProcessingTest {
 		fp.setFileName("test");
 	}
 
-	//	@AfterEach
-//	void tearDown() {
-//		try {
-//			Files.deleteIfExists(Path.of(pathIn));
-//			Files.deleteIfExists(Path.of(pathOut));
-//		} catch (IOException e) {
-//			throw new RuntimeException(e);
-//		}
-//	}
-
-	@Test
-	@DisplayName("Вместо количества цемента строка")
-	public void processingInFileAndSaveToFile_WhenStringInsteadOfNumberCement_ShouldThrowException() {
-		List<String> orders = List.of(
-					"2021-02-09T16:00:22|Industrial|8r800",
-					"2021-02-09T10:48:34|Mosque|33120"
-		);
-		createTestFileIn(orders);
-
-		assertThrows(InputMismatchException.class, () -> fp.processingInFileAndSaveToFile(),
-					"Должно выйти исключение \"Invalid amountCementPurchased: 8r800\"");
+	@AfterEach
+	void tearDown() {
+		try {
+			Files.deleteIfExists(Path.of(pathIn));
+			Files.deleteIfExists(Path.of(pathOut));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Test
 	@DisplayName("Некорректное (отрицательное) количество цемента в файле")
-	public void processingInFileAndSaveToFile_WhenIncorrectAmountCement_ShouldThrowException() {
+	void processingInFileAndSaveToFile_WhenIncorrectAmountCement_ShouldThrowException() {
 		List<String> orders = List.of(
 					"2021-02-09T16:00:22|Industrial|-8800",
 					"2021-02-09T10:48:34|Mosque|33120"
@@ -69,8 +52,21 @@ class FileProcessingTest {
 	}
 
 	@Test
+	@DisplayName("Вместо количества цемента строка")
+	void processingInFileAndSaveToFile_WhenStringInsteadOfNumberCement_ShouldThrowException() {
+		List<String> orders = List.of(
+					"2021-02-09T16:00:22|Industrial|8r800",
+					"2021-02-09T10:48:34|Mosque|33120"
+		);
+		createTestFileIn(orders);
+
+		assertThrows(InputMismatchException.class, () -> fp.processingInFileAndSaveToFile(),
+					"Должно выйти исключение \"Invalid amountCementPurchased: 8r800\"");
+	}
+
+	@Test
 	@DisplayName("Выдает исключение с другим разделителем")
-	public void processingInFileAndSaveToFile_WhenOtherSpliterator_ShouldThrowException() {
+	void processingInFileAndSaveToFile_WhenOtherSpliterator_ShouldThrowException() {
 		List<String> orders = List.of(
 					"2021-02-09T16:00:22|Industrial?8800",
 					"2021-02-09T10:48:34|Mosque|33120"
@@ -82,8 +78,41 @@ class FileProcessingTest {
 	}
 
 	@Test
+	@DisplayName("Неверная дата")
+	void processingInFileAndSaveToFile_WhenIncorrectDate_ShouldThrowException() {
+		List<String> orders = List.of(
+					"2021-02-0916:00:22|Industrial|8800",
+					"2021-02-09T10:48:34|Mosque|33120"
+		);
+		createTestFileIn(orders);
+
+		assertThrows(InputMismatchException.class, () -> fp.processingInFileAndSaveToFile(),
+					"Должно выйти исключение \"Invalid date: 2021-02-0916:00:22\"");
+	}
+
+	@Test
+	@DisplayName("Отсутствует файл")
+	void processingInFileAndSaveToFile_WhenFileNotExist_ShouldThrowException() {
+		fp.setPath("src/main/resources/in/super-mega-test.txt");
+
+		assertThrows(RuntimeException.class, () -> fp.processingInFileAndSaveToFile(),
+					"Должно выйти исключение \"File not found\"");
+	}
+
+	@Test
+	@DisplayName("Пустой файл")
+	void processingInFileAndSaveToFile_WhenFileIsEmpty_ShouldThrowException() {
+		List<String> orders = List.of();
+		createTestFileIn(orders);
+
+		assertThrows(RuntimeException.class, () -> fp.processingInFileAndSaveToFile(),
+					"Должно выйти исключение \"File is empty\"");
+
+	}
+
+	@Test
 	@DisplayName("Корректная обработка файла")
-	public void processingInFileAndSaveToFile_WhenEverythingIsFine_ShouldWorkCorrectly() {
+	void processingInFileAndSaveToFile_WhenEverythingIsFine_ShouldWorkCorrectly() {
 		List<String> orders = List.of(
 					"2021-02-09T16:00:22|Industrial|8800",
 					"2021-02-09T10:48:34|Mosque|33120"
@@ -97,7 +126,7 @@ class FileProcessingTest {
 					"Industrial - 48400.0"
 		);
 
-		Assertions.assertTrue(result.equals(resultOutFile));
+		assertEquals(result, resultOutFile);
 	}
 
 	private List<String> readTestFileOut() {
