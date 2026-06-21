@@ -1,12 +1,15 @@
 import lombok.Setter;
+import org.apache.commons.lang3.math.NumberUtils;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.InputMismatchException;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -20,6 +23,7 @@ public class FileProcessing {
 	private String fileName = "file.txt";
 	@Setter
 	private int discountPercent = 50;
+	@Setter
 	private String path = "src/main/resources/in/discount_day.txt";
 
 	public void processingInFileAndSaveToFile() {
@@ -27,13 +31,25 @@ public class FileProcessing {
 		setDiscountPercent(50);
 		List<String> orders = new ArrayList<>();
 		try (Stream<String> lines = Files.lines(Path.of(path))) {
+			if (Files.size(Path.of(path)) == 0) {
+				throw new RuntimeException("File is empty");
+			}
 			orders = lines
 						.map(line -> line.split(spliterator))
 						.map(s -> {
 							if (s.length < 3) {
 								throw new RuntimeException("Invalid spliterator: '" + spliterator + "' or file format!");
 							}
-							return new Order(LocalDateTime.parse(s[0]), s[1], Integer.parseInt(s[2]));
+							LocalDateTime orderSubmissionTime;
+							try {
+								orderSubmissionTime = LocalDateTime.parse(s[0]);
+							} catch (DateTimeParseException e) {
+								throw new InputMismatchException("Invalid date: " + s[0]);
+							}
+							if (!NumberUtils.isParsable(s[2]) || Integer.parseInt(s[2]) < 0) {
+								throw new InputMismatchException("Invalid amountCementPurchased: " + s[2]);
+							}
+							return new Order(orderSubmissionTime, s[1], Integer.parseInt(s[2]));
 						})
 						.sorted(Comparator.comparing(Order::getOrderSubmissionTime))
 						.map(order -> {
@@ -44,7 +60,7 @@ public class FileProcessing {
 						})
 						.collect(Collectors.toList());
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new RuntimeException("File not found");
 		}
 
 		String pathOutFile = "src/main/resources/out/" + fileName;
